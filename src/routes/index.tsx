@@ -45,9 +45,8 @@ export const Route = createFileRoute("/")({
           "Ajuda a remover sujidade pesada de tijoleiras, vasos sanitários e áreas de banho. Solicite a entrega em poucos segundos.",
       },
       { property: "og:type", content: "product" },
-      { property: "og:image", content: `https://decapante.lovable.app${produto.url}` },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: `https://decapante.lovable.app${produto.url}` },
+
     ],
   }),
   component: () => (
