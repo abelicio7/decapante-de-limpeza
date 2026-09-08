@@ -214,3 +214,47 @@ export async function triggerOrderAlert(order: {
   showLocalNotification(title, { body });
 }
 
+/**
+ * Triggers a status change notification (Audio chime + OS Notification + SW Notification)
+ */
+export async function triggerStatusChangeAlert(order: {
+  name: string;
+  status: string;
+  phone?: string;
+}) {
+  playOrderChime();
+
+  const statusLabels: Record<string, string> = {
+    novo: "Novo 🆕",
+    confirmado: "Confirmado ✅",
+    em_entrega: "Em entrega 🚚",
+    entregue: "Entregue 🏁",
+    cancelado: "Cancelado ❌",
+  };
+
+  const statusName = statusLabels[order.status] || order.status;
+  const title = `📦 Estado Atualizado: ${order.name}`;
+  const body = `O pedido de ${order.name} passou para "${statusName}".`;
+
+  if ("serviceWorker" in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && reg.showNotification) {
+        await reg.showNotification(title, {
+          body,
+          icon: "/produto.png",
+          badge: "/produto.png",
+          vibrate: [100, 50, 100],
+          data: { url: "/_authenticated/pedidos" },
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn("SW status notification error:", err);
+    }
+  }
+
+  showLocalNotification(title, { body });
+}
+
+

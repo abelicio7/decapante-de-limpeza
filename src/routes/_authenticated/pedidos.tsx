@@ -24,6 +24,7 @@ import {
   getAdminPushStatus,
   subscribeAdminPush,
   triggerOrderAlert,
+  triggerStatusChangeAlert,
   unsubscribeAdminPush,
 } from "@/lib/push-notifications";
 
@@ -69,7 +70,7 @@ function OrdersPage() {
     });
   }, []);
 
-  // Supabase Realtime Listener for Instant Order Notifications
+  // Supabase Realtime Listener for Instant Order Notifications & Status Updates
   useEffect(() => {
     const channel = supabase
       .channel("orders_realtime_channel")
@@ -91,9 +92,27 @@ function OrdersPage() {
           triggerOrderAlert(newOrder);
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders" },
+        (payload) => {
+          const updatedOrder = payload.new as {
+            name: string;
+            status: string;
+            phone?: string;
+          };
+
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          triggerStatusChangeAlert(updatedOrder);
+        }
+      )
       .on("broadcast", { event: "new_order" }, ({ payload }) => {
         queryClient.invalidateQueries({ queryKey: ["orders"] });
         if (payload) triggerOrderAlert(payload);
+      })
+      .on("broadcast", { event: "status_changed" }, ({ payload }) => {
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        if (payload) triggerStatusChangeAlert(payload);
       })
       .subscribe();
 
@@ -114,7 +133,7 @@ function OrdersPage() {
         // Play test chime on activation
         triggerOrderAlert({
           name: "Notificações Ativadas!",
-          phone: "Receberá alertas a cada novo pedido.",
+          phone: "Receberá alertas a cada novo pedido e mudança de estado.",
         });
       }
     } catch (err) {
@@ -125,10 +144,9 @@ function OrdersPage() {
   };
 
   const testNotification = () => {
-    triggerOrderAlert({
+    triggerStatusChangeAlert({
       name: "Cliente Exemplo",
-      phone: "84 123 4567",
-      neighborhood: "Maputo (Teste)",
+      status: "em_entrega",
     });
   };
 
@@ -143,9 +161,20 @@ function OrdersPage() {
     },
   });
 
-  const changeStatus = async (id: string, status: Status) => {
+  const changeStatus = async (id: string, status: Status, orderName: string) => {
     await supabase.from("orders").update({ status }).eq("id", id);
     queryClient.invalidateQueries({ queryKey: ["orders"] });
+    triggerStatusChangeAlert({ name: orderName, status });
+    try {
+      const channel = supabase.channel("orders_realtime_channel");
+      channel.send({
+        type: "broadcast",
+        event: "status_changed",
+        payload: { name: orderName, status },
+      });
+    } catch (err) {
+      console.warn("Broadcast status error:", err);
+    }
   };
 
   const signOut = async () => {
@@ -162,7 +191,7 @@ function OrdersPage() {
           <div>
             <h1 className="text-2xl">Pedidos recebidos</h1>
             <p className="text-xs text-muted-foreground mt-1">
-              Notificações de pedidos em tempo real ativas via Web Push / Realtime.
+              Notificações de pedidos e atualizações de estado em tempo real ativas.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -186,7 +215,7 @@ function OrdersPage() {
                 </Button>
                 {pushSubscribed && (
                   <Button variant="ghost" size="sm" onClick={testNotification} className="gap-1 text-xs">
-                    <Volume2 className="!size-4" /> Testar
+                    <Volume2 className="!size-4" /> Testar Alerta
                   </Button>
                 )}
               </>
@@ -249,7 +278,7 @@ function OrdersPage() {
                     <TableCell>
                       <Select
                         value={order.status}
-                        onValueChange={(v) => changeStatus(order.id, v as Status)}
+                        onValueChange={(v) => changeStatus(order.id, v as Status, order.name)}
                       >
                         <SelectTrigger className="w-36">
                           <SelectValue />
