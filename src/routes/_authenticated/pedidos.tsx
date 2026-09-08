@@ -165,7 +165,11 @@ function OrdersPage() {
 
   const changeStatus = async (id: string, status: Status, orderName: string) => {
     setUpdatingId(id);
-    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
+    const { data, error } = await supabase
+      .from("orders")
+      .update({ status })
+      .eq("id", id)
+      .select();
     setUpdatingId(null);
 
     if (error) {
@@ -174,6 +178,13 @@ function OrdersPage() {
       return;
     }
 
+    if (!data || data.length === 0) {
+      console.error("Supabase RLS bloqueou a alteração do pedido:", id);
+      toast.error("Erro: A sua conta não tem permissão no Supabase para guardar a alteração.");
+      return;
+    }
+
+    toast.success(`Estado de "${orderName}" atualizado para "${LABELS[status]}"!`);
     queryClient.invalidateQueries({ queryKey: ["orders"] });
     triggerStatusChangeAlert({ name: orderName, status });
   };
