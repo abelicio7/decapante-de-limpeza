@@ -15,6 +15,7 @@ import {
   Brush,
   Clock,
   Droplets,
+  Flame,
   Home,
   Sparkles,
   Timer,
@@ -82,8 +83,8 @@ function Landing() {
               Conheça o <strong>Decapante de Limpeza</strong> que ajuda a remover aquela sujidade
               pesada que os produtos comuns simplesmente não conseguem resolver.
             </p>
-            <p className="mt-5 font-display text-xl">
-              🔥 Apenas {PRICE_MT} MT{" "}
+            <p className="mt-5 flex items-center gap-2 font-display text-xl">
+              <Flame className="!size-5 text-highlight" /> Apenas {PRICE_MT} MT{" "}
               <span className="text-deep-foreground/60 line-through">{OLD_PRICE_MT} MT</span>
             </p>
             <div className="mt-6">
@@ -98,7 +99,7 @@ function Landing() {
             <img
               src={produto.url}
               alt="Embalagem de 1 litro do Decapante de Limpeza"
-              className="relative mx-auto w-full max-w-sm drop-shadow-2xl"
+              className="relative mx-auto w-full max-w-sm rounded-[2rem] bg-card p-4 shadow-card"
               width={1240}
               height={1240}
             />
