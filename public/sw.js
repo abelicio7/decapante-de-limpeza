@@ -13,7 +13,7 @@ self.addEventListener("push", (event) => {
     title: "Novo Pedido Recebido!",
     body: "Um novo pedido de Decapante de Limpeza foi efetuado.",
     icon: "/produto.png",
-    badge: "/favicon.ico",
+    badge: "/produto.png",
     url: "/_authenticated/pedidos",
   };
 

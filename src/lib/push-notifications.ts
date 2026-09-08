@@ -164,7 +164,7 @@ export function showLocalNotification(title: string, options?: NotificationOptio
   try {
     const notification = new Notification(title, {
       icon: "/produto.png",
-      badge: "/favicon.ico",
+      badge: "/produto.png",
       vibrate: [200, 100, 200],
       ...options,
     });
@@ -199,7 +199,7 @@ export async function triggerOrderAlert(order: {
         await reg.showNotification(title, {
           body,
           icon: "/produto.png",
-          badge: "/favicon.ico",
+          badge: "/produto.png",
           vibrate: [200, 100, 200],
           data: { url: "/_authenticated/pedidos" },
         });
