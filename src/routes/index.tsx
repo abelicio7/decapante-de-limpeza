@@ -11,12 +11,14 @@ import { OrderProvider, useOrder } from "@/components/order-dialog";
 import { DELIVERY_AREAS, OLD_PRICE_MT, PRICE_MT } from "@/lib/offer";
 import {
   AlertTriangle,
+  Banknote,
   Bath,
   Brush,
   Clock,
   Droplets,
   Flame,
   Home,
+  ShieldCheck,
   Sparkles,
   Timer,
   Toilet,
@@ -32,7 +34,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Decapante de limpeza para ajudar a remover sujidade pesada de tijoleiras, vasos sanitários e áreas de banho. Apenas 750 MT com entrega grátis em Maputo e Matola.",
+          "Decapante de limpeza para ajudar a remover sujidade pesada de tijoleiras, vasos sanitários e áreas de banho. Apenas 750 MT com entrega grátis em Maputo e Matola. Pagamento apenas na entrega!",
       },
       {
         property: "og:title",
@@ -41,11 +43,10 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Ajuda a remover sujidade pesada de tijoleiras, vasos sanitários e áreas de banho. Solicite a entrega em poucos segundos.",
+          "Ajuda a remover sujidade pesada de tijoleiras, vasos sanitários e áreas de banho. Solicite a entrega em poucos segundos. Pagamento apenas ao receber!",
       },
       { property: "og:type", content: "product" },
       { name: "twitter:card", content: "summary_large_image" },
-
     ],
   }),
   component: () => (
@@ -71,9 +72,14 @@ function Landing() {
       <section className="surface-deep relative overflow-hidden">
         <div className="mx-auto grid max-w-6xl gap-8 px-5 pt-12 pb-14 md:grid-cols-2 md:items-center md:gap-12 md:pt-20 md:pb-24">
           <div className="reveal">
-            <span className="badge-flash inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold tracking-wide uppercase">
-              <Truck className="!size-4" /> Entrega grátis em {DELIVERY_AREAS}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="badge-flash inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold tracking-wide uppercase">
+                <Truck className="!size-4" /> Entrega grátis em {DELIVERY_AREAS}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/20 border border-accent/30 px-3 py-1.5 text-xs font-bold tracking-wide uppercase text-accent">
+                <Banknote className="!size-4" /> Pagamento apenas na entrega
+              </span>
+            </div>
             <h1 className="mt-5 text-4xl md:text-5xl">
               Tijoleiras encardidas e vasos que parecem impossíveis de limpar?
             </h1>
@@ -87,8 +93,8 @@ function Landing() {
             </p>
             <div className="mt-6">
               <Cta origin="hero" className="w-full cta-pulse sm:w-auto" />
-              <p className="mt-3 text-sm text-deep-foreground/75">
-                Preencha os seus dados e receba o produto em casa.
+              <p className="mt-3 flex items-center gap-2 text-sm text-deep-foreground/90 font-medium">
+                <ShieldCheck className="!size-4 text-accent" /> 🤝 **Sem riscos:** Pague apenas no momento da entrega após receber o produto.
               </p>
             </div>
           </div>
@@ -270,7 +276,7 @@ function Landing() {
               { q: "Quanto custa?", a: `Apenas ${PRICE_MT} MT.` },
               {
                 q: "Como faço o pedido?",
-                a: "Clique em “Solicitar Entrega” e preencha nome, telefone e endereço.",
+                a: "Clique em “Solicitar Entrega”, preencha os dados e pague APENAS no momento da entrega.",
               },
             ].map((item) => (
               <div key={item.q} className="rounded-3xl bg-card p-5 shadow-card">
@@ -301,9 +307,12 @@ function Landing() {
             <p className="mt-4 flex items-center justify-center gap-2 font-semibold">
               <Truck className="!size-5 text-highlight" /> Entrega grátis — {DELIVERY_AREAS}
             </p>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-accent/20 px-4 py-1.5 text-xs font-bold text-accent">
+              <Banknote className="!size-4" /> PAGAMENTO APENAS NO MOMENTO DA ENTREGA
+            </div>
             <Cta origin="oferta-final" className="mt-6 w-full" />
-            <p className="mt-3 text-xs text-deep-foreground/75">
-              Pedido simples • Sem pagamento online • Confirmação por telefone
+            <p className="mt-3 text-xs text-deep-foreground/85 font-medium">
+              ✓ Pedido simples • 💳 Zero adiantamento • 🤝 Pague só ao receber a encomenda
             </p>
           </div>
         </div>
@@ -321,10 +330,9 @@ function Landing() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="2">
-            <AccordionTrigger>Como pago?</AccordionTrigger>
+            <AccordionTrigger>Quando e como faço o pagamento?</AccordionTrigger>
             <AccordionContent>
-              Não existe pagamento online. A nossa equipa liga para confirmar o pedido e combinar a
-              entrega e o pagamento.
+              **O pagamento é feito APENAS no momento da entrega!** Não existe qualquer tipo de pagamento online ou adiantamento. A nossa equipa entrega o produto em sua casa e você paga no ato da entrega (em dinheiro, M-Pesa ou E-Mola).
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="3">
@@ -357,7 +365,7 @@ function Landing() {
             contacto com os olhos e pele. Mantenha fora do alcance de crianças. Não misture com
             outros produtos de limpeza.
           </p>
-          <p className="mt-4">Entrega grátis em {DELIVERY_AREAS} • {PRICE_MT} MT</p>
+          <p className="mt-4">Entrega grátis em {DELIVERY_AREAS} • {PRICE_MT} MT • Pagamento no ato da entrega</p>
         </div>
       </footer>
 
@@ -366,7 +374,7 @@ function Landing() {
         <div className="flex items-center gap-3">
           <div className="leading-tight">
             <p className="font-display text-xl">{PRICE_MT} MT</p>
-            <p className="text-[11px] text-muted-foreground">Entrega grátis</p>
+            <p className="text-[11px] text-accent font-semibold">Pague na entrega</p>
           </div>
           <Cta origin="barra-fixa" className="h-13 flex-1 text-sm" />
         </div>
@@ -374,3 +382,4 @@ function Landing() {
     </main>
   );
 }
+
