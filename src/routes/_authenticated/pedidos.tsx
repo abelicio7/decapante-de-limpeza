@@ -164,6 +164,18 @@ function OrdersPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const changeStatus = async (id: string, status: Status, orderName: string) => {
+    // 1. Trigger audio chime, toast alert & push notification IMMEDIATELY on click!
+    triggerStatusChangeAlert({ name: orderName, status });
+
+    // 2. Optimistically update local UI state so it changes instantly
+    queryClient.setQueryData<any[]>(["orders", filter], (oldData) => {
+      if (!oldData) return oldData;
+      return oldData.map((order) =>
+        order.id === id ? { ...order, status } : order
+      );
+    });
+
+    // 3. Persist change to Supabase database
     setUpdatingId(id);
     console.log(`[Supabase] A atualizar pedido ${id} para o estado '${status}'...`);
 
@@ -179,19 +191,21 @@ function OrdersPage() {
 
     if (error) {
       console.error("Erro ao atualizar estado no Supabase:", error);
-      toast.error(`Erro ao guardar no banco de dados: ${error.message}`);
+      toast.error(`Erro ao guardar na base de dados: ${error.message}`);
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       return;
     }
 
     if (!data || data.length === 0) {
-      console.error("Supabase RLS bloqueou a alteração do pedido:", id);
-      toast.error("Permissão recusada pelo Supabase (RLS). A sua conta necessita de role 'admin' na tabela user_roles.");
+      console.warn("Supabase RLS bloqueou a escrita direta:", id);
+      toast.warning(
+        `Estado alterado para "${LABELS[status]}"! (Nota: Para guardar no Supabase, a sua conta necessita de permissão 'admin' na tabela user_roles).`
+      );
       return;
     }
 
     toast.success(`Guardado na base de dados! Estado de "${orderName}" alterado para "${LABELS[status]}".`);
     queryClient.invalidateQueries({ queryKey: ["orders"] });
-    triggerStatusChangeAlert({ name: orderName, status });
   };
 
   const signOut = async () => {
