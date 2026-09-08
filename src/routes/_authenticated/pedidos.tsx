@@ -164,10 +164,22 @@ function OrdersPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const changeStatus = async (id: string, status: Status, orderName: string) => {
-    // 1. Trigger audio chime, toast alert & push notification IMMEDIATELY on click!
+    // 1. Trigger audio chime, toast alert & push notification IMMEDIATELY on this device
     triggerStatusChangeAlert({ name: orderName, status });
 
-    // 2. Optimistically update local UI state so it changes instantly
+    // 2. Broadcast status change event to all connected admin devices (Mobile, Tablets, Desktop)
+    try {
+      const channel = supabase.channel("orders_realtime_channel");
+      channel.send({
+        type: "broadcast",
+        event: "status_changed",
+        payload: { name: orderName, status },
+      });
+    } catch (err) {
+      console.warn("Realtime status broadcast error:", err);
+    }
+
+    // 3. Optimistically update local UI state so it changes instantly
     queryClient.setQueryData<any[]>(["orders", filter], (oldData) => {
       if (!oldData) return oldData;
       return oldData.map((order) =>
@@ -175,7 +187,7 @@ function OrdersPage() {
       );
     });
 
-    // 3. Persist change to Supabase database
+    // 4. Persist change to Supabase database
     setUpdatingId(id);
     console.log(`[Supabase] A atualizar pedido ${id} para o estado '${status}'...`);
 
