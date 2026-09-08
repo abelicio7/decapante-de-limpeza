@@ -25,7 +25,6 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"entrar" | "criar">("entrar");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -41,32 +40,12 @@ function AuthPage() {
     event.preventDefault();
     setLoading(true);
     setMessage(null);
-    const action =
-      mode === "entrar"
-        ? supabase.auth.signInWithPassword({ email, password })
-        : supabase.auth.signUp({
-            email,
-            password,
-            options: { emailRedirectTo: `${window.location.origin}/pedidos` },
-          });
-    const { error } = await action;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      setMessage(error.message);
+      setMessage("Email ou palavra-passe incorretos.");
       return;
     }
-    navigate({ to: "/pedidos" });
-  };
-
-  const google = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      setMessage("Não foi possível entrar com o Google.");
-      return;
-    }
-    if (result.redirected) return;
     navigate({ to: "/pedidos" });
   };
 
