@@ -23,8 +23,6 @@ import {
   Truck,
 } from "lucide-react";
 
-import produto from "@/assets/produto.png.asset.json";
-
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -97,7 +95,7 @@ function Landing() {
           <div className="reveal relative">
             <div className="absolute inset-6 rounded-full bg-brand/25 blur-3xl" aria-hidden />
             <img
-              src={produto.url}
+              src="/produto.png"
               alt="Embalagem de 1 litro do Decapante de Limpeza"
               className="relative mx-auto w-full max-w-sm rounded-[2rem] bg-card p-4 shadow-card"
               width={1240}
