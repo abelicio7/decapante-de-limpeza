@@ -165,26 +165,31 @@ function OrdersPage() {
 
   const changeStatus = async (id: string, status: Status, orderName: string) => {
     setUpdatingId(id);
+    console.log(`[Supabase] A atualizar pedido ${id} para o estado '${status}'...`);
+
     const { data, error } = await supabase
       .from("orders")
       .update({ status })
       .eq("id", id)
       .select();
+
     setUpdatingId(null);
+
+    console.log("[Supabase] Resultado da atualização:", { data, error });
 
     if (error) {
       console.error("Erro ao atualizar estado no Supabase:", error);
-      toast.error(`Não foi possível alterar o estado: ${error.message}`);
+      toast.error(`Erro ao guardar no banco de dados: ${error.message}`);
       return;
     }
 
     if (!data || data.length === 0) {
       console.error("Supabase RLS bloqueou a alteração do pedido:", id);
-      toast.error("Erro: A sua conta não tem permissão no Supabase para guardar a alteração.");
+      toast.error("Permissão recusada pelo Supabase (RLS). A sua conta necessita de role 'admin' na tabela user_roles.");
       return;
     }
 
-    toast.success(`Estado de "${orderName}" atualizado para "${LABELS[status]}"!`);
+    toast.success(`Guardado na base de dados! Estado de "${orderName}" alterado para "${LABELS[status]}".`);
     queryClient.invalidateQueries({ queryKey: ["orders"] });
     triggerStatusChangeAlert({ name: orderName, status });
   };
