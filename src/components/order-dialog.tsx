@@ -83,7 +83,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
                 <CheckCircle2 className="!size-8 text-accent" />
               </div>
-              <DialogTitle className="mt-4 font-display text-2xl">Pedido recebido! 🎉</DialogTitle>
+              <DialogTitle className="mt-4 font-display text-2xl">Pedido recebido!</DialogTitle>
               <p className="mt-3 text-sm text-muted-foreground">
                 Obrigado pelo seu pedido. Recebemos os seus dados e a nossa equipa entrará em
                 contacto pelo telefone informado para confirmar a encomenda e combinar a entrega.
