@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -83,19 +82,9 @@ function AuthPage() {
           {message && <p className="text-xs text-destructive">{message}</p>}
           <Button type="submit" variant="deep" size="xl" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="animate-spin" /> : null}
-            {mode === "entrar" ? "Entrar" : "Criar conta"}
+            Entrar
           </Button>
         </form>
-        <Button variant="outline" size="xl" className="mt-3 w-full" onClick={google}>
-          Continuar com Google
-        </Button>
-        <button
-          type="button"
-          className="mt-5 w-full text-xs text-muted-foreground underline"
-          onClick={() => setMode(mode === "entrar" ? "criar" : "entrar")}
-        >
-          {mode === "entrar" ? "Não tem conta? Criar conta" : "Já tem conta? Entrar"}
-        </button>
       </div>
     </main>
   );
