@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -25,7 +24,6 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"entrar" | "criar">("entrar");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -41,32 +39,12 @@ function AuthPage() {
     event.preventDefault();
     setLoading(true);
     setMessage(null);
-    const action =
-      mode === "entrar"
-        ? supabase.auth.signInWithPassword({ email, password })
-        : supabase.auth.signUp({
-            email,
-            password,
-            options: { emailRedirectTo: `${window.location.origin}/pedidos` },
-          });
-    const { error } = await action;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      setMessage(error.message);
+      setMessage("Email ou palavra-passe incorretos.");
       return;
     }
-    navigate({ to: "/pedidos" });
-  };
-
-  const google = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      setMessage("Não foi possível entrar com o Google.");
-      return;
-    }
-    if (result.redirected) return;
     navigate({ to: "/pedidos" });
   };
 
@@ -104,19 +82,9 @@ function AuthPage() {
           {message && <p className="text-xs text-destructive">{message}</p>}
           <Button type="submit" variant="deep" size="xl" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="animate-spin" /> : null}
-            {mode === "entrar" ? "Entrar" : "Criar conta"}
+            Entrar
           </Button>
         </form>
-        <Button variant="outline" size="xl" className="mt-3 w-full" onClick={google}>
-          Continuar com Google
-        </Button>
-        <button
-          type="button"
-          className="mt-5 w-full text-xs text-muted-foreground underline"
-          onClick={() => setMode(mode === "entrar" ? "criar" : "entrar")}
-        >
-          {mode === "entrar" ? "Não tem conta? Criar conta" : "Já tem conta? Entrar"}
-        </button>
       </div>
     </main>
   );
