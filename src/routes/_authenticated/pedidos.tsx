@@ -161,20 +161,21 @@ function OrdersPage() {
     },
   });
 
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
   const changeStatus = async (id: string, status: Status, orderName: string) => {
-    await supabase.from("orders").update({ status }).eq("id", id);
+    setUpdatingId(id);
+    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
+    setUpdatingId(null);
+
+    if (error) {
+      console.error("Erro ao atualizar estado no Supabase:", error);
+      toast.error(`Não foi possível alterar o estado: ${error.message}`);
+      return;
+    }
+
     queryClient.invalidateQueries({ queryKey: ["orders"] });
     triggerStatusChangeAlert({ name: orderName, status });
-    try {
-      const channel = supabase.channel("orders_realtime_channel");
-      channel.send({
-        type: "broadcast",
-        event: "status_changed",
-        payload: { name: orderName, status },
-      });
-    } catch (err) {
-      console.warn("Broadcast status error:", err);
-    }
   };
 
   const signOut = async () => {
@@ -278,6 +279,7 @@ function OrdersPage() {
                     <TableCell>
                       <Select
                         value={order.status}
+                        disabled={updatingId === order.id}
                         onValueChange={(v) => changeStatus(order.id, v as Status, order.name)}
                       >
                         <SelectTrigger className="w-36">
