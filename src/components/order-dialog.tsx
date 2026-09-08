@@ -55,17 +55,31 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     if (Object.keys(next).length > 0) return;
 
     setSending(true);
-    const { error } = await supabase.from("orders").insert({
+    const orderPayload = {
       name: form.name.trim(),
       phone: form.phone.trim(),
       address: form.address.trim(),
       neighborhood: form.neighborhood.trim() || null,
-    });
+    };
+
+    const { error } = await supabase.from("orders").insert(orderPayload);
     setSending(false);
 
     if (error) {
       setErrors({ name: "Não conseguimos enviar o pedido. Tente novamente." });
       return;
+    }
+
+    // Broadcast real-time order notification for admin channel listeners
+    try {
+      const channel = supabase.channel("orders_realtime_channel");
+      channel.send({
+        type: "broadcast",
+        event: "new_order",
+        payload: orderPayload,
+      });
+    } catch (broadcastErr) {
+      console.warn("Broadcast error:", broadcastErr);
     }
 
     track("ORDER_SUBMITTED", { value: PRICE_MT, currency: "MZN" });

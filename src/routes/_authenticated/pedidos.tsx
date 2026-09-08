@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { Bell, BellOff, Loader2, ShieldAlert, Volume2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +20,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import {
+  getAdminPushStatus,
+  subscribeAdminPush,
+  triggerOrderAlert,
+  unsubscribeAdminPush,
+} from "@/lib/push-notifications";
 
 export const Route = createFileRoute("/_authenticated/pedidos")({
   head: () => ({
@@ -51,6 +57,80 @@ function OrdersPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Status | "todos">("todos");
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const [pushSupported, setPushSupported] = useState(true);
+
+  // Check initial push notification status
+  useEffect(() => {
+    getAdminPushStatus().then((status) => {
+      setPushSupported(status.supported);
+      setPushSubscribed(status.subscribed);
+    });
+  }, []);
+
+  // Supabase Realtime Listener for Instant Order Notifications
+  useEffect(() => {
+    const channel = supabase
+      .channel("orders_realtime_channel")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        (payload) => {
+          const newOrder = payload.new as {
+            name: string;
+            phone: string;
+            address?: string;
+            neighborhood?: string | null;
+          };
+
+          // Invalidate React Query list to show new order immediately
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+
+          // Trigger Push & Audio alert
+          triggerOrderAlert(newOrder);
+        }
+      )
+      .on("broadcast", { event: "new_order" }, ({ payload }) => {
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        if (payload) triggerOrderAlert(payload);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  const toggleNotifications = async () => {
+    setPushLoading(true);
+    try {
+      if (pushSubscribed) {
+        await unsubscribeAdminPush();
+        setPushSubscribed(false);
+      } else {
+        await subscribeAdminPush();
+        setPushSubscribed(true);
+        // Play test chime on activation
+        triggerOrderAlert({
+          name: "Notificações Ativadas!",
+          phone: "Receberá alertas a cada novo pedido.",
+        });
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao alterar notificações.");
+    } finally {
+      setPushLoading(false);
+    }
+  };
+
+  const testNotification = () => {
+    triggerOrderAlert({
+      name: "Cliente Exemplo",
+      phone: "84 123 4567",
+      neighborhood: "Maputo (Teste)",
+    });
+  };
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["orders", filter],
@@ -79,10 +159,42 @@ function OrdersPage() {
     <main className="surface-soft min-h-screen px-5 py-10">
       <div className="mx-auto max-w-5xl">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl">Pedidos recebidos</h1>
-          <Button variant="outline" onClick={signOut}>
-            Sair
-          </Button>
+          <div>
+            <h1 className="text-2xl">Pedidos recebidos</h1>
+            <p className="text-xs text-muted-foreground mt-1">
+              Notificações de pedidos em tempo real ativas via Web Push / Realtime.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {pushSupported && (
+              <>
+                <Button
+                  variant={pushSubscribed ? "default" : "outline"}
+                  size="sm"
+                  onClick={toggleNotifications}
+                  disabled={pushLoading}
+                  className="gap-1.5"
+                >
+                  {pushLoading ? (
+                    <Loader2 className="animate-spin !size-4" />
+                  ) : pushSubscribed ? (
+                    <Bell className="!size-4 text-accent-foreground" />
+                  ) : (
+                    <BellOff className="!size-4" />
+                  )}
+                  {pushSubscribed ? "Notificações Ativas" : "Ativar Notificações"}
+                </Button>
+                {pushSubscribed && (
+                  <Button variant="ghost" size="sm" onClick={testNotification} className="gap-1 text-xs">
+                    <Volume2 className="!size-4" /> Testar
+                  </Button>
+                )}
+              </>
+            )}
+            <Button variant="outline" size="sm" onClick={signOut}>
+              Sair
+            </Button>
+          </div>
         </div>
 
         <div className="mt-6 w-56">
@@ -163,3 +275,4 @@ function OrdersPage() {
     </main>
   );
 }
+
