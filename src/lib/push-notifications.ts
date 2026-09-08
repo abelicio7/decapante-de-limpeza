@@ -177,8 +177,10 @@ export function showLocalNotification(title: string, options?: NotificationOptio
   }
 }
 
+import { toast } from "sonner";
+
 /**
- * Triggers a full order alert (Audio chime + OS Notification + SW Notification)
+ * Triggers a full order alert (Audio chime + Toast + OS Notification + SW Notification)
  */
 export async function triggerOrderAlert(order: {
   name: string;
@@ -191,11 +193,17 @@ export async function triggerOrderAlert(order: {
   const title = `🚨 Novo Pedido: ${order.name}`;
   const body = `Telefone: ${order.phone} | Local: ${order.neighborhood || order.address || "Maputo/Matola"}`;
 
+  // In-app visual toast alert
+  toast.success(title, {
+    description: body,
+    duration: 7000,
+  });
+
   // Try service worker notification first (works when tab is in background)
   if ("serviceWorker" in navigator) {
     try {
       const reg = await navigator.serviceWorker.ready;
-      if (reg && reg.showNotification) {
+      if (reg && reg.showNotification && Notification.permission === "granted") {
         await reg.showNotification(title, {
           body,
           icon: "/produto.png",
@@ -215,7 +223,7 @@ export async function triggerOrderAlert(order: {
 }
 
 /**
- * Triggers a status change notification (Audio chime + OS Notification + SW Notification)
+ * Triggers a status change notification (Audio chime + Toast + OS Notification + SW Notification)
  */
 export async function triggerStatusChangeAlert(order: {
   name: string;
@@ -236,10 +244,16 @@ export async function triggerStatusChangeAlert(order: {
   const title = `📦 Estado Atualizado: ${order.name}`;
   const body = `O pedido de ${order.name} passou para "${statusName}".`;
 
+  // In-app visual toast alert
+  toast.info(title, {
+    description: body,
+    duration: 7000,
+  });
+
   if ("serviceWorker" in navigator) {
     try {
       const reg = await navigator.serviceWorker.ready;
-      if (reg && reg.showNotification) {
+      if (reg && reg.showNotification && Notification.permission === "granted") {
         await reg.showNotification(title, {
           body,
           icon: "/produto.png",
@@ -256,5 +270,6 @@ export async function triggerStatusChangeAlert(order: {
 
   showLocalNotification(title, { body });
 }
+
 
 
