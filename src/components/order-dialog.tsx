@@ -2,7 +2,6 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import { CheckCircle2, Loader2, PackageCheck, Truck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +19,7 @@ export function useOrder() {
   return ctx;
 }
 
-type Errors = Partial<Record<"name" | "phone" | "address" | "consent", string>>;
+type Errors = Partial<Record<"name" | "phone" | "address", string>>;
 
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,7 +31,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     phone: "",
     address: "",
     neighborhood: "",
-    consent: false,
   });
 
   const open = useCallback((origin: string) => {
@@ -50,7 +48,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const digits = form.phone.replace(/\D/g, "");
     if (digits.length < 9) next.phone = "Escreva um número de telefone válido (9 dígitos).";
     if (form.address.trim().length < 5) next.address = "Indique o local da entrega.";
-    if (!form.consent) next.consent = "Precisamos da sua autorização para ligar.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -102,7 +99,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
     track("ORDER_SUBMITTED", { value: PRICE_MT, currency: "MZN" });
     setDone(true);
-    setForm({ name: "", phone: "", address: "", neighborhood: "", consent: false });
+    setForm({ name: "", phone: "", address: "", neighborhood: "" });
   };
 
   return (
@@ -186,22 +183,14 @@ export function OrderProvider({ children }: { children: ReactNode }) {
                     onChange={(e) => setForm({ ...form, neighborhood: e.target.value })}
                   />
                 </div>
-                <div className="flex items-start gap-3 rounded-2xl bg-muted p-3">
-                  <Checkbox
-                    id="consent"
-                    checked={form.consent}
-                    onCheckedChange={(v) => setForm({ ...form, consent: v === true })}
-                  />
-                  <Label htmlFor="consent" className="text-xs leading-relaxed font-normal">
-                    Concordo em ser contactado para confirmação da encomenda.
-                  </Label>
-                </div>
-                {errors.consent && <p className="text-xs text-destructive">{errors.consent}</p>}
                 <Button type="submit" variant="cta" size="xl" className="w-full" disabled={sending}>
                   {sending ? <Loader2 className="animate-spin" /> : null}
                   Confirmar pedido
                 </Button>
-                <p className="text-center text-xs text-muted-foreground">
+                <p className="text-center text-xs text-muted-foreground leading-relaxed">
+                  Ao clicar em <strong>Confirmar pedido</strong>, concorda em ser contactado para confirmação da encomenda.
+                </p>
+                <p className="text-center text-xs text-muted-foreground font-medium">
                   {PRICE_MT} MT • Sem pagamento online • Confirmação por telefone
                 </p>
               </form>
