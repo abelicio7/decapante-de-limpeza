@@ -114,8 +114,30 @@ export async function getAdminPushStatus(): Promise<{
   return { supported, permission, subscribed };
 }
 
+let globalAudioCtx: AudioContext | null = null;
+
 /**
-  Plays a soft 2-tone audio chime using Web Audio API when a new order is received.
+ * Unlocks the Web Audio API context on any user interaction (click/tap/keypress).
+ */
+export function unlockAudio() {
+  try {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!globalAudioCtx) {
+      globalAudioCtx = new AudioCtx();
+    }
+    if (globalAudioCtx.state === "suspended") {
+      globalAudioCtx.resume();
+    }
+  } catch (err) {
+    console.warn("Unlock audio error:", err);
+  }
+}
+
+/**
+  Plays a clear 3-tone audio chime using Web Audio API when a new order is received.
  */
 export function playOrderChime() {
   try {
@@ -123,32 +145,53 @@ export function playOrderChime() {
       window.AudioContext ||
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+
+    if (!globalAudioCtx || globalAudioCtx.state === "closed") {
+      globalAudioCtx = new AudioCtx();
+    }
+
+    if (globalAudioCtx.state === "suspended") {
+      globalAudioCtx.resume();
+    }
+
+    const ctx = globalAudioCtx;
     const now = ctx.currentTime;
 
-    // First tone (D5)
+    // Tone 1 (D5)
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = "sine";
     osc1.frequency.setValueAtTime(587.33, now);
-    gain1.gain.setValueAtTime(0.3, now);
+    gain1.gain.setValueAtTime(0.5, now);
     gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
     osc1.connect(gain1);
     gain1.connect(ctx.destination);
     osc1.start(now);
     osc1.stop(now + 0.3);
 
-    // Second tone (A5)
+    // Tone 2 (F#5)
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = "sine";
-    osc2.frequency.setValueAtTime(880, now + 0.15);
-    gain2.gain.setValueAtTime(0.4, now + 0.15);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    osc2.frequency.setValueAtTime(739.99, now + 0.12);
+    gain2.gain.setValueAtTime(0.6, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
     osc2.connect(gain2);
     gain2.connect(ctx.destination);
-    osc2.start(now + 0.15);
-    osc2.stop(now + 0.6);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.45);
+
+    // Tone 3 (A5)
+    const osc3 = ctx.createOscillator();
+    const gain3 = ctx.createGain();
+    osc3.type = "sine";
+    osc3.frequency.setValueAtTime(880, now + 0.25);
+    gain3.gain.setValueAtTime(0.7, now + 0.25);
+    gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+    osc3.connect(gain3);
+    gain3.connect(ctx.destination);
+    osc3.start(now + 0.25);
+    osc3.stop(now + 0.7);
   } catch (err) {
     console.warn("Audio chime error:", err);
   }
@@ -165,7 +208,8 @@ export function showLocalNotification(title: string, options?: NotificationOptio
     const notification = new Notification(title, {
       icon: "/produto.png",
       badge: "/produto.png",
-      vibrate: [200, 100, 200],
+      vibrate: [300, 100, 300, 100, 300],
+      requireInteraction: true,
       ...options,
     });
     notification.onclick = () => {
@@ -188,27 +232,30 @@ export async function triggerOrderAlert(order: {
   address?: string;
   neighborhood?: string | null;
 }) {
+  unlockAudio();
   playOrderChime();
 
-  const title = `🚨 Novo Pedido: ${order.name}`;
+  const title = `🚨 NOVO PEDIDO: ${order.name}`;
   const body = `Telefone: ${order.phone} | Local: ${order.neighborhood || order.address || "Maputo/Matola"}`;
 
   // In-app visual toast alert
   toast.success(title, {
     description: body,
-    duration: 7000,
+    duration: 10000,
   });
 
   // Try service worker notification first (works when tab is in background)
-  if ("serviceWorker" in navigator) {
+  if ("serviceWorker" in navigator && Notification.permission === "granted") {
     try {
       const reg = await navigator.serviceWorker.ready;
-      if (reg && reg.showNotification && Notification.permission === "granted") {
+      if (reg && reg.showNotification) {
         await reg.showNotification(title, {
           body,
           icon: "/produto.png",
           badge: "/produto.png",
-          vibrate: [200, 100, 200],
+          vibrate: [300, 100, 300, 100, 300],
+          tag: `order-${Date.now()}`,
+          requireInteraction: true,
           data: { url: "/_authenticated/pedidos" },
         });
         return;
@@ -219,7 +266,7 @@ export async function triggerOrderAlert(order: {
   }
 
   // Fallback to standard local Notification
-  showLocalNotification(title, { body });
+  showLocalNotification(title, { body, requireInteraction: true });
 }
 
 /**

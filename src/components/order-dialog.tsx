@@ -79,7 +79,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
     // Broadcast real-time order notification to admin channel listeners
     try {
-      const channel = supabase.channel("orders_realtime_channel");
+      const channel = supabase.channel("orders_realtime_channel", {
+        config: {
+          broadcast: { ack: true },
+        },
+      });
       channel.subscribe((status) => {
         if (status === "SUBSCRIBED") {
           channel.send({

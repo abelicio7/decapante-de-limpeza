@@ -25,6 +25,7 @@ import {
   subscribeAdminPush,
   triggerOrderAlert,
   triggerStatusChangeAlert,
+  unlockAudio,
   unsubscribeAdminPush,
 } from "@/lib/push-notifications";
 
@@ -78,6 +79,17 @@ function OrdersPage() {
     triggerOrderAlert(order);
   };
 
+  // Unlock AudioContext on user gesture anywhere on admin page
+  useEffect(() => {
+    const handleGesture = () => unlockAudio();
+    window.addEventListener("click", handleGesture, { once: false });
+    window.addEventListener("touchstart", handleGesture, { once: false });
+    return () => {
+      window.removeEventListener("click", handleGesture);
+      window.removeEventListener("touchstart", handleGesture);
+    };
+  }, []);
+
   // Check initial push notification status
   useEffect(() => {
     getAdminPushStatus().then((status) => {
@@ -89,7 +101,11 @@ function OrdersPage() {
   // Supabase Realtime Listener for Instant Order Notifications & Status Updates
   useEffect(() => {
     const channel = supabase
-      .channel("orders_realtime_channel")
+      .channel("orders_realtime_channel", {
+        config: {
+          broadcast: { self: true, ack: true },
+        },
+      })
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "orders" },
@@ -138,6 +154,7 @@ function OrdersPage() {
   const toggleNotifications = async () => {
     setPushLoading(true);
     try {
+      unlockAudio();
       if (pushSubscribed) {
         await unsubscribeAdminPush();
         setPushSubscribed(false);
@@ -158,9 +175,12 @@ function OrdersPage() {
   };
 
   const testNotification = () => {
-    triggerStatusChangeAlert({
-      name: "Cliente Exemplo",
-      status: "em_entrega",
+    unlockAudio();
+    triggerOrderAlert({
+      name: "Teste de Pedido",
+      phone: "84 000 0000",
+      address: "Endereço de Teste",
+      neighborhood: "Maputo",
     });
   };
 
@@ -173,7 +193,7 @@ function OrdersPage() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 8000,
+    refetchInterval: 5000,
     refetchIntervalInBackground: true,
   });
 
@@ -304,6 +324,24 @@ function OrdersPage() {
             </Button>
           </div>
         </div>
+
+        {!pushSubscribed && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 p-4 text-foreground">
+            <div className="flex items-center gap-3">
+              <Bell className="!size-5 shrink-0 text-amber-500 animate-bounce" />
+              <div>
+                <p className="font-semibold text-sm">Ative as Notificações e o Áudio de Pedidos</p>
+                <p className="text-xs text-muted-foreground">
+                  Para ouvir o alarme e ver avisos no ecrã quando um cliente fizer um pedido, clique no botão para permitir.
+                </p>
+              </div>
+            </div>
+            <Button variant="default" size="sm" onClick={toggleNotifications} disabled={pushLoading}>
+              {pushLoading ? <Loader2 className="animate-spin !size-4" /> : <Bell className="!size-4" />}
+              Permitir Alertas Sonoros
+            </Button>
+          </div>
+        )}
 
         <div className="mt-6 w-56">
           <Select value={filter} onValueChange={(v) => setFilter(v as Status | "todos")}>

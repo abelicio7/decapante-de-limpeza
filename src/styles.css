@@ -80,7 +80,7 @@
   --card-foreground: oklch(0.19 0.02 155);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.19 0.02 155);
-  --primary: oklch(0.52 0.2 26);
+  --primary: oklch(0.52 0.21 142);
   --primary-foreground: oklch(0.99 0.01 106);
   --secondary: oklch(0.96 0.02 150);
   --secondary-foreground: oklch(0.3 0.07 155);
@@ -92,15 +92,15 @@
   --destructive-foreground: oklch(0.99 0.01 106);
   --border: oklch(0.91 0.012 150);
   --input: oklch(0.91 0.012 150);
-  --ring: oklch(0.52 0.2 26);
-  --brand: oklch(0.52 0.2 26);
+  --ring: oklch(0.52 0.21 142);
+  --brand: oklch(0.52 0.21 142);
   --brand-foreground: oklch(0.99 0.01 106);
   --deep: oklch(0.3 0.075 155);
   --deep-foreground: oklch(0.99 0.01 106);
   --highlight: oklch(0.86 0.17 92);
   --highlight-foreground: oklch(0.24 0.05 92);
   --shadow-card: 0 10px 30px -12px oklch(0.3 0.075 155 / 0.22);
-  --shadow-cta: 0 12px 28px -8px oklch(0.52 0.2 26 / 0.45);
+  --shadow-cta: 0 12px 28px -8px oklch(0.52 0.21 142 / 0.45);
 
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -214,10 +214,10 @@
 @keyframes pulse-cta {
   0%,
   100% {
-    box-shadow: 0 12px 28px -8px oklch(0.52 0.2 26 / 0.45);
+    box-shadow: 0 12px 28px -8px oklch(0.52 0.21 142 / 0.45);
   }
   50% {
-    box-shadow: 0 14px 40px -6px oklch(0.52 0.2 26 / 0.65);
+    box-shadow: 0 14px 40px -6px oklch(0.52 0.21 142 / 0.65);
   }
 }
 
