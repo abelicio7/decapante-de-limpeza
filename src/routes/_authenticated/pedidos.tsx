@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, BellOff, Loader2, ShieldAlert, Volume2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +62,22 @@ function OrdersPage() {
   const [pushLoading, setPushLoading] = useState(false);
   const [pushSupported, setPushSupported] = useState(true);
 
+  const notifiedOrdersRef = useRef<Set<string>>(new Set());
+  const knownOrderIdsRef = useRef<Set<string> | null>(null);
+
+  const notifyNewOrder = (order: {
+    id?: string;
+    name: string;
+    phone: string;
+    address?: string;
+    neighborhood?: string | null;
+  }) => {
+    const key = order.id || `${order.phone}_${order.name}`;
+    if (notifiedOrdersRef.current.has(key)) return;
+    notifiedOrdersRef.current.add(key);
+    triggerOrderAlert(order);
+  };
+
   // Check initial push notification status
   useEffect(() => {
     getAdminPushStatus().then((status) => {
@@ -79,17 +95,15 @@ function OrdersPage() {
         { event: "INSERT", schema: "public", table: "orders" },
         (payload) => {
           const newOrder = payload.new as {
+            id?: string;
             name: string;
             phone: string;
             address?: string;
             neighborhood?: string | null;
           };
 
-          // Invalidate React Query list to show new order immediately
           queryClient.invalidateQueries({ queryKey: ["orders"] });
-
-          // Trigger Push & Audio alert
-          triggerOrderAlert(newOrder);
+          notifyNewOrder(newOrder);
         }
       )
       .on(
@@ -108,7 +122,7 @@ function OrdersPage() {
       )
       .on("broadcast", { event: "new_order" }, ({ payload }) => {
         queryClient.invalidateQueries({ queryKey: ["orders"] });
-        if (payload) triggerOrderAlert(payload);
+        if (payload) notifyNewOrder(payload);
       })
       .on("broadcast", { event: "status_changed" }, ({ payload }) => {
         queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -159,7 +173,29 @@ function OrdersPage() {
       if (error) throw error;
       return data;
     },
+    refetchInterval: 8000,
+    refetchIntervalInBackground: true,
   });
+
+  // Background polling detection for new orders
+  useEffect(() => {
+    if (!data) return;
+
+    if (knownOrderIdsRef.current === null) {
+      knownOrderIdsRef.current = new Set(data.map((o) => o.id));
+      data.forEach((o) => notifiedOrdersRef.current.add(o.id));
+      return;
+    }
+
+    for (const order of data) {
+      if (!knownOrderIdsRef.current.has(order.id)) {
+        knownOrderIdsRef.current.add(order.id);
+        if (order.status === "novo") {
+          notifyNewOrder(order);
+        }
+      }
+    }
+  }, [data]);
 
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 

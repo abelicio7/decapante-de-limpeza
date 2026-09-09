@@ -62,7 +62,12 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       neighborhood: form.neighborhood.trim() || null,
     };
 
-    const { error } = await supabase.from("orders").insert(orderPayload);
+    const { data: insertedData, error } = await supabase
+      .from("orders")
+      .insert(orderPayload)
+      .select()
+      .maybeSingle();
+
     setSending(false);
 
     if (error) {
@@ -70,13 +75,22 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Broadcast real-time order notification for admin channel listeners
+    const payloadToSend = insertedData || orderPayload;
+
+    // Broadcast real-time order notification to admin channel listeners
     try {
       const channel = supabase.channel("orders_realtime_channel");
-      channel.send({
-        type: "broadcast",
-        event: "new_order",
-        payload: orderPayload,
+      channel.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          channel.send({
+            type: "broadcast",
+            event: "new_order",
+            payload: payloadToSend,
+          });
+          setTimeout(() => {
+            supabase.removeChannel(channel);
+          }, 3000);
+        }
       });
     } catch (broadcastErr) {
       console.warn("Broadcast error:", broadcastErr);
